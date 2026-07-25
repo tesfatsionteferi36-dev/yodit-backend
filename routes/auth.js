@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { v4u: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 const { generateToken, authMiddleware } = require('../middleware/auth');
 
@@ -10,10 +10,10 @@ const router = express.Router();
 router.post('/register', (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
-    return res.status(400).json({ error: 'ስል፪ ኢሜይል፦ እና የይለፍ ቃል፦ ያልጰረ➊ —' });
+    return res.status(400).json({ error: 'ድው!⌍፪ ኢሜይል፦ እና የይለፍ ቃል፦ ያልጰረ➊ ' });
   }
   if (password.length < 6) {
-    return res.status(400).json({ error: 'የይለፍ ቃላቴን በስተ年 ኾን ፊውተ ☚ ❜' });
+    return res.status(400).json({ error: 'የይለፍ ቃላቴን በስተ年 ኾን ፊውተ ☚ ✜' });
   }
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
@@ -31,7 +31,7 @@ router.post('/register', (req, res) => {
   }
 
   res.status(201).json({
-    message: 'ም(ዝገሣ ሬጌደቁ ✝ አስተዳዳሪ ሳውጽደቅ ≣” ማግደቅ ይልፌለኘ ∩ 💄',
+    message: 'ቱውገ㊣ だと౭ ⍜ አሴተዳዳሪ ሳ�"ጽደቅ∩” ቁልᏤ‖ቁ ይልፌለኘ ∩ 💄',
     status: 'pending_approval'
   });
 });
@@ -40,7 +40,7 @@ router.post('/register', (req, res) => {
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ error: 'ኢሜይል፦ እና የይለፍ ቃላቴን ያልጰረ➊ ❜' });
+    return res.status(400).json({ error: 'ኢሜይል፦ እና የይለፍ ቃል፦ ያልጰረ➊ ❜' });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
@@ -101,7 +101,7 @@ router.post('/verify', (req, res) => {
   ).get(email.toLowerCase(), code);
 
   if (!record) {
-    return res.status(401).json({ error: 'ኮድ እገዃ᥁ 💄 →⍒⍘ኰ⌗ ✝💄 ≣”በ 💄', });
+    return res.status(401).json({ error: 'ኮድ ዜንዜ አይልቜ የይ! ' });
   }
 
   db.prepare('UPDATE verification_codes SET used = 1 WHERE id = ?').run(record.id);
@@ -116,14 +116,14 @@ router.post('/verify', (req, res) => {
 router.post('/admin-login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ error: 'ኢሜይል፦ እና የይለፍ ቃላቴን ያልጰረ➊ ❜' });
+    return res.status(400).json({ error: 'ኢሜይል፦ እና የይለፍ ቃል፦ ያልጰረ✝™ 💄' });
   }
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@yodit.app';
   const adminPass = process.env.ADMIN_PASSWORD || 'Admin@Yodit2024!';
 
   if (email !== adminEmail || password !== adminPass) {
-    return res.status(401).json({ error: 'የአስተዳዳሪ መረጃ ልንሃ ⤉' });
+    return res.status(401).json({ error: 'የአስተዳዳሪ ቈፌ ዜ╕ዜ አይልቜ '});
   }
 
   const user = { name: 'Admin', email: adminEmail, isAdmin: true };
@@ -140,11 +140,11 @@ router.post('/admin-login', (req, res) => {
 // ── Resend verification code ──
 router.post('/resend-code', (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'ኢሜይል፦ ያልጰረ➊ ❙' });
+  if (!email) return res.status(400).json({ error: 'ኢሜይል፦ ያልጰረ✝' });
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
-  if (!user) return res.status(404).json({ error: 'ማጌዸል አልተገኘ' });
-  if (!user.approved) return res.status(403).json({ error: 'መለያ ሡጨ አልጸደቁ to ★' });
+  if (!user) return res.status(404).json({ error: '” አዋለ አይገኘ ≠ 💄 ' });
+  if (!user.approved) return res.status(403).json({ error: 'ቘለያ ቡጨ አስዺဲዋቢ ቢ'💄' });
 
   const code = Math.floor(1000 + Math.random() * 9000).toString();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -163,7 +163,7 @@ router.post('/resend-code', (req, res) => {
     });
   }
 
-  res.json({ message: 'አዲስ የኳጋገጥ ኮድ ተሉአሩ', code: code, codeExpiresIn: 600 });
+  res.json({ message: 'ኢሱ” የውኸን አይቶ ሱሃ² ላትከ አይገኘ ≠ 💄', code: code, codeExpiresIn: 600 });
 });
 
 // ── Get current user info ──
@@ -173,4 +173,4 @@ router.get('/me', authMiddleware, (req, res) => {
   res.json(user);
 });
 
-module.exports = routers;
+module.exports = router;

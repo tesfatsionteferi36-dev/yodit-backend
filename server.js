@@ -6,7 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-const db = require('./db');
+const { pool, initDB } = require('./db');
 const { verifyToken } = require('./middleware/auth');
 
 const app = express();
@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
   console.log(`[socket] connected: ${socket.id}`);
 
   // User authenticates via socket
-  socket.on('authenticate', (token) => {
+  socket.on('authenticate', async (token) => {
     try {
       const decoded = verifyToken(token);
       socket.userEmail = decoded.email;
@@ -56,8 +56,10 @@ io.on('connection', (socket) => {
       onlineUsers.get(decoded.email).add(socket.id);
 
       // Update DB
-      db.prepare("UPDATE users SET online = 1, socket_id = ?, last_seen = datetime('now') WHERE email = ?")
-        .run(socket.id, decoded.email);
+      await pool.execute(
+        'UPDATE users SET online = 1, socket_id = ?, last_seen = NOW() WHERE email = ?',
+        [socket.id, decoded.email]
+      );
 
       if (decoded.isAdmin) {
         socket.join('admin_room');
@@ -74,7 +76,7 @@ io.on('connection', (socket) => {
   });
 
   // Admin joins admin room
-  socket.on('join_admin', (token) => {
+  socket.on('join_admin', async (token) => {
     try {
       const decoded = verifyToken(token);
       if (decoded.isAdmin) {
@@ -85,13 +87,13 @@ io.on('connection', (socket) => {
           onlineUsers.set(decoded.email, new Set());
         }
         onlineUsers.get(decoded.email).add(socket.id);
-        db.prepare("UPDATE users SET online = 1, last_seen = datetime('now') WHERE email = ?").run(decoded.email);
+        await pool.execute('UPDATE users SET online = 1, last_seen = NOW() WHERE email = ?', [decoded.email]);
       }
     } catch (e) { /* ignore */ }
   });
 
   // Handle disconnect
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log(`[socket] disconnected: ${socket.id}`);
     if (socket.userEmail) {
       const sockets = onlineUsers.get(socket.userEmail);
@@ -99,8 +101,7 @@ io.on('connection', (socket) => {
         sockets.delete(socket.id);
         if (sockets.size === 0) {
           onlineUsers.delete(socket.userEmail);
-          db.prepare("UPDATE users SET online = 0, last_seen = datetime('now') WHERE email = ?")
-            .run(socket.userEmail);
+          await pool.execute('UPDATE users SET online = 0, last_seen = NOW() WHERE email = ?', [socket.userEmail]);
           io.to('admin_room').emit('user_offline', { email: socket.userEmail });
         }
       }
@@ -116,7 +117,7 @@ app.get('/admin', (req, res) => {
 
 // ── API 404 handler (returns JSON, never HTML) ──
 app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'Endpoint አልታቀቘሩ መልቡ፪ ' + req.method + ' ' + req.path });
+  res.status(404).json({ error: 'Endpoint አልተገኘም: ' + req.method + ' ' + req.path });
 });
 
 // ── Serve frontend for all other routes ──
@@ -127,18 +128,24 @@ app.get('*', (req, res) => {
 // ── Global error handler (always JSON) ──
 app.use((err, req, res, next) => {
   console.error('[SERVER ERROR]', err.stack || err.message);
-  res.status(500).json({ error: 'የሰርቨር ስዝህት: ' + (err.message || 'Unknown error') });
+  res.status(500).json({ error: 'የሰርቨር ስህተት: ' + (err.message || 'Unknown error') });
 });
 
 // ── Start server ──
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`
-┕═══════════════════════════════════════════▌
-║ ����️  ዮዲት ባክንድ ሰርቨር  🌬️              ║
-║  Port: ${String(PORT).padEnd(30)} ║
+
+initDB().then(() => {
+  server.listen(PORT, () => {
+    console.log(`
+╔══════════════════════════════════════════╗
+║  🌬️  ዮዲት ባክንድ ሰርቨር (MySQL)  🌬️        ║
+║  Port: ${String(PORT).padEnd(30)}║
 ║  Admin: http://localhost:${PORT}/admin     ║
 ║  API:   http://localhost:${PORT}/api       ║
-╚══════════════════════════════════════════╎║
-  `);
+╚══════════════════════════════════════════╝
+    `);
+  });
+}).catch(err => {
+  console.error('❌ Database initialization failed:', err.message);
+  process.exit(1);
 });

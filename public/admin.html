@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ዠስተዳዳሪ ፓአል፣ | 厚股耊 ×</title>
+  <style>
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container { max-width: 1200px; margin:0 auto; }
+    h1 {
+      font-size: 24px;
+      background: linear-gradient(135deg, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 24px;
+    }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px, 1fr)); gap:16px; }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #334155;
+      transition: all 0.2s;
+    }
+    .card:hover { border-color: #60a5fa; }
+    .card h3 { font-size: 18px; margin-bottom: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge-green { background: #165a34; color: #4ade80; }
+    .badge-yellow { background: #783500; color: #fabf2e; }
+    .badge-red { background: #7f1d1d; color: #fca7a7; }
+    .badge-blue { background: #1e3a8a; color: #93d6ff; }
+    .badge-gray { background: #334155; color: #94a3b8; }
+    .stats { display:flex; gap:24px; margin-bottom: 24px; flex-wrap:wrap; }
+    .stat-box {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px 24px;
+      border: 1px solid #334155;
+      flex: 1;
+      min-width: 140px;
+    }
+    .stat-box .number { font-size: 32px; font-weight:700; color:#60a5fa; }
+    .stat-box .label { font-size: 14px; color: #94a3b8; }
+    button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px;
+      transition: all 0.2s;
+    }
+    .btn-green { background: #165a34; color: white; }
+    .btn-green:hover { background: #22c55e; }
+    .btn-red { background: #7f1d1d; color: white; }
+    .btn-red:hover { background: #ef4444; }
+    .btn-blue { background: #3b82f6; color: white; }
+    .btn-blue:hover { background: #60a5fa; }
+    .btn-purple { background: #7b3fe0; color: white; }
+    .login-box {
+      max-width: 400px;
+      margin: 100px auto;
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid #334155;
+    }
+    .login-box h2 { text-align: center; margin-bottom: 24px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    input:focus { outline:none; border-color:#60a5fa; }
+    meta.online { color: #4ade80; }
+    .message-box {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #334155;
+      margin-bottom: 20px;
+    }
+    .message-box textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 12px;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .error { color: #fca7a7; font-size: 13px; margin-top: 8px; }
+    .success { color: #4ade80; font-size: 13px; margin-top: 8px; }
+    .hidden { display: none; }
+    .detail-panel {
+      position: fixed;
+      top: 0; right: 0;
+      width: 420px;
+      height: 100vh;
+      background: #1e293b;
+      border-left: 1px solid #334155;
+      padding: 24px;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    detail-panel .close { float: right; background: none; border: none; color: #e2e8f0; font-size: 24px; cursor: pointer; }
+    @media (max-width: 768px) { .detail-panel { width: 100%; } }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <div class="login-box">
+    <h2>🔴 አስተዳዳሪ መግቢ<br>!የ ዮዲት አቄንሰ አስተዳዳሪ × 💴</h2>
+    <div id="loginError" class="error"></div>
+    <input type="email" id="email" placeholder="ኢሜይል፦">
+    <input type="password" id="password" placeholder="የይ዁ዤቡ">
+    <button class="btn-blue" onclick="login()" style="width:100%; padding:12px">🔜 ሎጊን</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="container hidden">
+  <h1>📅 ⠍ 📄 ዡዳጞ 📄 ⠍ 📄 የጤና ጉዞ 👎 📄 አስተዳዳሪ"× </h1>
+  
+  <div class="stats" id="stats"></div>
+
+  <style>
+    .msg-section { margin-bottom: 24px; }
+    .msg-section h4 { margin-bottom: 12px; color: #60a5fa; }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #0f172a;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #334155;
+    }
+    .checkbox-group label:hover { border-color: #60a5fa; }
+    .checkbox-group input[type="checkbox"] { width: auto; margin: 0; }
+    .msg-list { margin-bottom: 16px; }
+    .msg-item {
+      padding: 12px 16px;
+      background: #1e293b;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #334155;
+      font-size: 13px;
+    }
+    .msg-item .meta { color: #94a3b8; font-size: 11px; }
+  </style>
+
+  <!-- Message Send Section -->
+  <div class="message-box msg-section">
+    <h4>📐 መልክት ላክ</h4>
+    <div class="checkbox-group" id="userCheckboxes"></div>
+    <div style="margin-bottom: 8px">
+      <label style="font-size: 13px"><input type="checkbox" id="sendAll" onchange="toggleAll()"> ለ၁ 🚠 ዩዘሮች</label>
+    </div>
+    <input type="text" id="msgTitle" placeholder="ከይል፦ (⍒ሴጥ ��)">
+    <textarea id="msgBody" placeholder="መልክት..."></textarea>
+    <button class="btn-purple" onclick="sendMessage()">🔃 ዂዯ☁</button>
+    <span id="msgStatus" class="success"></span>
+  </div>
+
+  <div class="msg-section">
+    <h4>💬 መልክት ያቘሮ አም⌍ 🌔😂ም</h4>
+    <div id="msgList" class="msg-list"></div>
+  </div>
+
+  <h3>👥 ዩዘሮች</h3>
+  <div class="grid" id="usersGrid"></div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="detailPanel" class="detail-panel hidden">
+  <button class="close" onclick="document.getElementById('detailPanel').classList.add('hidden')">&times;</button>
+  <h2 id="detailName"></h2>
+  <p style="color:#94a3b8" id="detailEmail"></p>
+  <div style="margin: 16px 0;">
+    <button class="btn-green" id="btnApprove" onclick="approveUser()">🔮 ⏐⌠ቐቘቑ 📥 አጽድቅ 📥 📠</button>
+    <button class="btn-red" id="btnBlock" onclick="blockUser()">🖚 ⍕ Ẍ 🔜 አግድ</button>
+    <button class="btn-blue" id="btnResend" onclick="resendCode()">🔥 📥  ⁯” 📥  ⣋቙</button>
+  </div>
+  <hr style="border-color:#334155; margin: 16px 0;">
+  <h3>📊 የዩዘር ዳታ 🔄</h3>
+  <div id="detailData" style="font-size: 13px; white-space: pre-wrap; background:#0f172a; padding: 12px; border-radius: 8px; max-height: 400px; overflow-y: auto;"></div>
+</div>
+
+<script>
+/* ☠ Admin Panel Logic ☠*/
+const API = window.location.hostname === 'localhost' ? '' : window.location.origin;
+
+let token = localStorage.getItem('yodit_admin_token');
+let currentUsers = [];
+
+function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  document.getElementById('loginError').textContent = '';
+  
+  fetch(`${API}/api/auth/admin-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        document.getElementById('loginError').textContent = d.error;
+        return;
+      }
+      token = d.token;
+      localStorage.setItem('yodit_admin_token', d.token);
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      connectSocket();
+      loadUsers();
+      loadMessages();
+    })
+    .catch(e => {
+      document.getElementById('loginError').textContent = 'ሬጋጔ አል★ 🔧≛√' + e.message;
+    });
+}
+
+function connectSocket() {
+  if (typeof io === 'undefined') return;
+  const socket = io(API, { auth: { token: `undefined` } });
+  socket.emit('join_admin', token);
+  socket.on('new_registration', () => loadUsers());
+  socket.on(\'user_online\', () => loadUsers());
+  socket.on('user_offline', () => loadUsers());
+  socket.on('online_count', (c) => {
+    document.getElementById('stats').innerHTML = `<div class="stat-box"><div class="number">${c}</div><div class="label">🟢 ኪንላይን 💍</div></div>`;
+  });
+}
+
+function loadUsers() {
+  fetch(`${API}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(users => {
+      if (users.error) return;
+      currentUsers = users;
+      
+      const total = users.length;
+      const approved = users.filter(u => u.approved).length;
+      const online = users.filter(u => u.online).length;
+      const blocked = users.filter(u => u.blocked).length;
+      
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-box"><div class="number">${total}</div><div class="label">👥 ልድዐራ ዩዘሮች</div></div>
+        <div class="stat-box"><div class="number">${approved}</div><div class="label">🔮 📥 📑 አጽድቅ✅</div></div>
+        <div class="stat-box"><div class="number">${online}</div><div class="label">🟢 ኦንላይን</div></div>
+        <div class="stat-box"><div class="number">${blocked}</div><div class="label">🖚 „ Ẍ</div></div>
+      `;
+      renderUsers(users);
+      renderCheckboxes(users);
+    });
+}
+
+function renderUsers(users) {
+  const grid = document.getElementById('usersGrid');
+  grid.innerHTML = users.map(u => {
+    const badge = u.blocked ? 'badge-red' : u.approved ? 'badge-green' : 'badge-yellow';
+    const status = u.blocked ? 'ª! ዡውዬ'ª' : u.approved ? 'ጽደቁ ⌍' : '💆  (ჵქᅍ)';
+    return `
+      <div class="card">
+        <div style="display:flex; justify-content: space-between; align-items: start;">
+          <div>
+            <h3>${u.name}
+              ${u.online ? '<meta class="online">🖢 ኪንላይን</meta>' : ''}
+            </h3>
+            <p style="font-size: 13px; color:#94a3b8; margin-top:4px">${u.email}</p>
+            <p style="font-size: 11px; margin-top:4px">
+              <span class="badge ${badge}">${status}</span>
+              | Last: ${u.last_seen ? new Date(u.last_seen).toLocaleString() : '💥 😉' }
+            </p>
+          </div>
+          <div>
+            <button class="btn-blue" onclick="showDetail('${u.email}')">📊 የዩዘር 🔄</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCheckboxes(users) {
+  const div = document.getElementById('userCheckboxes');
+  div.innerHTML = users.filter(u => u.approved && !u.blocked).map(u => `
+      <label>
+        <input type="checkbox" value="${u.email}" class="user-checkbox">
+        ${u.name}
+        ${u.online ? '🕢 ': ''}
+      </label>
+  `).join('');
+}
+
+function toggleAll() {
+  const checked = document.getElementById('sendAll').checked;
+  document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = checked);
+}
+
+function sendMessage() {
+  const toAll = document.getElementById('sendAll').checked;
+  const title = document.getElementById('msgTitle').value;
+  const body = document.getElementById('msgBody').value;
+  if (!body) return;
+  
+  const payload = { body, title, toAll };
+  if (!toAll) {
+    payload.to = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
+    if (payload.to.length === 0) return;
+  }
+  
+  fetch(`${API}/api/admin/message`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('msgStatus').textContent = d.message || '📍 ተሉኀሩ'☁
+      document.getElementById('msgBody').value = '';
+      document.getElementById('msgTitle').value = '';
+      setTimeout(() => document.getElementById('msgStatus').textContent = '', 3000);
+      loadMessages();
+    });
+}
+
+function loadMessages() {
+  fetch(`${API}/api/admin/messages/stats`, { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(msgs => {
+      if (msgs.error) return;
+      document.getElementById('msgList').innerHTML = msgs.map(m => `
+        <div class="msg-item">
+          <strong>${m.title || '📅” 📄📄 ⨆‍ 📄 📄' }</strong>
+          <br>
+          ${m.body.substring(0, 80)}
+          <div class="meta">
+            🤔 ${new Date(m.sent_at).toLocaleString()}
+            | 💚√ ${m.readBy ? m.readBy.length : 0} 🔰
+          </div>
+        </div>
+      `).join('');
+    });
+}
+
+function showDetail(email) {
+  fetch(`${API}/api/admin/users/${encodeURIComponent(email)}/data`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('detailName').textContent = d.profile.name;
+      document.getElementById('detailEmail').textContent = d.profile.email;
+      document.getElementById('detailData').textContent = JSON.stringify(d.data, null, 2);
+      
+      const u = currentUsers.find(u => u.email === email);
+      if (u) {
+        const btnApprove = document.getElementById('btnApprove');
+        const btnBlock = document.getElementById('btnBlock');
+        if (u.approved) {
+          btnApprove.style.display = 'none';
+          btnBlock.textContent = u.blocked ? '📞  ⠀ Ẍ   ' : '🖚 ⁳ € الا2';
+        } else {
+          btnApprove.style.display = 'inline-block';
+        }
+        btnBlock.style.display = u.blocked ? 'none' : 'inline-block';
+      }
+      document.getElementById('detailPanel').dataset.email = email;
+      document.getElementById('detailPanel').classList.remove('hidden');
+    });
+}
+
+function approveUser() {
+  const email = document.getElementById('detailPanel').dataset.email;
+  fetch(`${API}/api/admin/users/${encodeURIComponent(email)}/approve`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(d => {
+      alert(`🔮 📥 📑 አጽድቅ ❡ 🔊 ☁ $ {d.code}`);
+      loadUsers();
+      document.getElementById('detailPanel').classList.add('hidden');
+    });
+}
+
+function blockUser() {
+  const email = document.getElementById('detailPanel').dataset.email;
+  fetch(`${API}/api/admin/users/${encodeURIComponent(email)}/block`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(() => {
+      alert('Blocked 😍');
+      loadUsers();
+      document.getElementById('detailPanel').classList.add('hidden');
+    });
+}
+
+function resendCode() {
+  const email = document.getElementById('detailPanel').dataset.email;
+  fetch(`${API}/api/admin/users/${encodeURIComponent(email)}/resend-code`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(d => { alert('Resend code: ' + d.code); });
+}
+
+// Auto-load if token exists
+if (token) {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  connectSocket();
+  loadUsers();
+  loadMessages();
+}
+</script>
+</body>
+</html>

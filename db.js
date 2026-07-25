@@ -1,87 +1,102 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const mysql = require('mysql2/promise');
 
-const DB_PATH = path.join(__dirname, 'yodit.db');
-const db = new Database(DB_PATH);
+// ── Create connection pool ──
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST || 'localhost',
+  port: parseInt(process.env.MYSQL_PORT || '3306'),
+  user: process.env.MYSQL_USER || 'root',
+  password: process.env.MYSQL_PASSWORD || '',
+  database: process.env.MYSQL_DATABASE || 'yodit',
+  waitForConnections: true,
+  connectionLimit: 5,
+  queueLimit: 0
+});
 
-// Enable WAL mode for better concurrent access
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// ── Initialize database tables ──
+async function initDB() {
+  const conn = await pool.getConnection();
+  try {
+    // Create tables
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        approved TINYINT DEFAULT 0,
+        blocked TINYINT DEFAULT 0,
+        online TINYINT DEFAULT 0,
+        last_seen DATETIME,
+        socket_id VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        fcm_token VARCHAR(255)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb
+    `);
 
-// ── Create tables ──
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    approved INTEGER DEFAULT 0,
-    blocked INTEGER DEFAULT 0,
-    online INTEGER DEFAULT 0,
-    last_seen TEXT,
-    socket_id TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
-    fcm_token TEXT
-  );
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS verification_codes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        code VARCHAR(10) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used TINYINT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb
+    `);
 
-  CREATE TABLE IF NOT EXISTS verification_codes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT NOT NULL,
-    code TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    used INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        from_admin TINYINT DEFAULT 1,
+        to_email VARCHAR(255),
+        to_all TINYINT DEFAULT 0,
+        title VARCHAR(255),
+        body TEXT NOT NULL,
+        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        read_at DATETIME,
+        read_by TEXT DEFAULT '[]'
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb
+    `);
 
-  CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_admin INTEGER DEFAULT 1,
-    to_email TEXT,
-    to_all INTEGER DEFAULT 0,
-    title TEXT,
-    body TEXT NOT NULL,
-    sent_at TEXT DEFAULT (datetime('now')),
-    read_at TEXT,
-    read_by TEXT DEFAULT '[]'
-  );
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS user_data (
+        email VARCHAR(255) PRIMARY KEY,
+        data_json TEXT DEFAULT '{}',
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb
+    `);
 
-  CREATE TABLE IF NOT EXISTS user_data (
-    email TEXT PRIMARY KEY,
-    data_json TEXT DEFAULT '{}',
-    updated_at TEXT DEFAULT (datetime('now'))
-  );
+    // Create indexes
+    try { await conn.execute('CREATE INDEX idx_vcodes_email ON verification_codes(user_email)'); } catch(e) {}
+    try { await conn.execute('CREATE INDEX idx_vcodes_expires ON verification_codes(expires_at)'); } catch(e) {}
+    try { await conn.execute('CREATE INDEX idx_messages_to ON messages(to_email)'); } catch(e) {}
+    try { await conn.execute('CREATE INDEX idx_userdata_email ON user_data(email)'); } catch(e) {}
 
-  CREATE INDEX IF NOT EXISTS idx_vcodes_email ON verification_codes(user_email);
-  CREATE INDEX IF NOT EXISTS idx_vcodes_expires ON verification_codes(expires_at);
-  CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_email);
-  CREATE INDEX IF NOT EXISTS idx_userdata_email ON user_data(email);
-`);
+    // ── Seed admin user (if not exists) ──
+    const bcrypt = require('bcryptjs');
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@yodit.app';
+    const [existing] = await conn.execute('SELECT id FROM users WHERE email = ?', [adminEmail]);
+    if (existing.length === 0) {
+      const hash = bcrypt.hashSync('Admin@Yodit2024!', 10);
+      await conn.execute(
+        'INSERT INTO users (name, email, password_hash, approved, blocked) VALUES (?, ?, ?, 1, 0)',
+        ['Admin', adminEmail, hash]
+      );
+      console.log('✓ Admin user seeded: ' + adminEmail);
+    }
 
-// ── Migration: ensure user_data has data_json column (handle old schema) ──
-try {
-  db.prepare('SELECT data_json FROM user_data LIMIT 1').get();
-} catch(e) {
-  console.log('♡ Migrating user_data table to new schema...');
-  db.exec('DROP TABLE IF EXISTS user_data');
-  db.exec(`CREATE TABLE user_data (email TEXT PRIMARY KEY, data_json TEXT DEFAULT '{}', updated_at TEXT DEFAULT (datetime('now')))`);
-  db.exec('CREATE INDEX IF NOT EXISTS idx_userdata_email ON user_data(email)');
-  console.log('✓ Migration complete');
+    console.log('✓ MySQL database initialized');
+  } finally {
+    conn.release();
+  }
 }
 
-// ── Seed admin user (if not exists) ──
-const bcrypt = require('bcryptjs');
-const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@yodit.app');
-if (!existingAdmin) {
-  const hash = bcrypt.hashSync('Admin@Yodit2024!', 10);
-  db.prepare('INSERT INTO users (name, email, password_hash, approved, blocked) VALUES (?, ?, ?, 1, 0)')
-    .run('Admin', 'admin@yodit.app', hash);
-  console.log('✓ Admin user seeded: admin@yodit.app');
-}
-
-// ── Helper: Clean expired verification codes ──
-function cleanExpiredCodes() {
-  db.prepare("DELETE FROM verification_codes WHERE expires_at < datetime('now')").run();
+// ── Clean expired verification codes ──
+async function cleanExpiredCodes() {
+  try {
+    await pool.execute('DELETE FROM verification_codes WHERE expires_at < NOW()');
+  } catch(e) { /* ignore */ }
 }
 setInterval(cleanExpiredCodes, 5 * 60 * 1000);
 
-module.exports = db;
+module.exports = { pool, initDB };

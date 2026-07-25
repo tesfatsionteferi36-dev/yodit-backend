@@ -1,0 +1,14 @@
+{
+  "name": "ዮዲት — የጤና ጉዞ",
+  "short_name": "ዡሳጞ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#60a5fa",
+  "icons": [{
+    "src": "/icon.svg",
+    "sizes": "512x512",
+    "type": "image/svg+xml",
+    "purpose": "any"
+  }]
+}
